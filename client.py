@@ -10,22 +10,28 @@ def establish_connection():
     s.connect((HOST, PORT))
     return s
 
-def perform_tasks():
-    s = establish_connection()
-    while 1:
-        data = s.recv(1024)
-        print 'Received', repr(data)
-        s.send('Hello, world')
+def execute_task():
+    x = input("Input something: ")
+    report_to_master(x)
 
-        if data == "end":
-            break
+
+def report_to_master(result):
+    s = establish_connection()
+
+    data = s.recv(1024)
+    print 'Received', data.strip()
+    st = str(result)
+    st += " " * (1024 - len(st))
+    s.send(st)
+    s.send("exit")
+    
     s.close()
 
 
-
-
-
+# while we did not reach end of output:
+#   keep sending stuff + "\n\r"
+# if there is remainder: pad the remainder
 
 
 if __name__ == "__main__":
-    perform_tasks()
+    execute_task()

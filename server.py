@@ -3,7 +3,7 @@
 import socket
 
 BLOCK_SIZE = 1024
-PORT = 50007
+PORT = 50008
 HOST = '127.0.0.1'
 
 
@@ -36,14 +36,14 @@ class Task(object):
 
             while 1:
                 c.send("Send the solution Peon")
-                peon_message = c.recv(BLOCK_SIZE)
+                peon_message = c.recv(BLOCK_SIZE).strip()
                 print("Peon sends the solution ", peon_message)
 
-                if peon_message.strip() == "exit":
+                if peon_message == "exit":
                     print("closing connection", str(i))
                     break
                 else:
-                    solutions.append(peon_message.strip())
+                    solutions.append(peon_message)
 
             c.close()
 
@@ -62,3 +62,4 @@ if __name__ == "__main__":
 # reboot all
 # retry subtask
 # non-blocking IO: select 
+# upload on PIs
