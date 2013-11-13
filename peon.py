@@ -33,4 +33,6 @@ def report_to_master(result):
 
 
 if __name__ == "__main__":
-    execute_task()
+    while 1:
+        input("Let me go")
+        execute_task()

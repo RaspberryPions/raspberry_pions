@@ -8,16 +8,15 @@ HOST = '127.0.0.1'
 
 
 NUM_PEONS = 2
+NUM_TASKS = 4
 
-
-# in the beginning:
-    # get available peons from overlay
 
 
 class Task(object):
 
     def __init__(self, completed_callback=None):
         self._solutions = [] 
+        # get ips from overlay
         self.completed_callback = completed_callback
         self._listen()
 
@@ -30,7 +29,7 @@ class Task(object):
         s = socket.socket()
         s.bind((HOST, PORT))
 
-        for i in range(NUM_PEONS):
+        for i in range(NUM_TASKS):
             s.listen(0)
             c, addr = s.accept()
             print("Connection from", addr)
