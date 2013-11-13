@@ -3,12 +3,12 @@ import socket
 import example as example #TO BE CHANGED!!
 
 HOST = '127.0.0.1'    # The remote host
-PORT = 50009             # The same port as used by the server
+COM_PORT = 50009             # The same port as used by the server
 
 
 def establish_connection():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((HOST, PORT))
+    s.connect((HOST, COM_PORT))
     return s
 
 def execute_task():
@@ -22,18 +22,14 @@ def report_to_master(result):
     s = establish_connection()
 
     data = s.recv(1024)
-    print 'Received', data.strip()
+    print 'Received on Peon', data.strip()
     st = str(result)
     st += " " * (1024 - len(st))
+    print(st)
     s.send(st)
     s.send("exit")
     
     s.close()
-
-
-# while we did not reach end of output:
-#   keep sending stuff + "\n\r"
-# if there is remainder: pad the remainder
 
 
 if __name__ == "__main__":

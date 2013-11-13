@@ -17,14 +17,15 @@ NUM_PEONS = 2
 class Task(object):
 
     def __init__(self, completed_callback=None):
+        self._solutions = [] 
+        self.completed_callback = completed_callback
         self._listen()
 
     def peon_task(self, user_function, id, args=[]):
         pass
 
     def _listen(self):
-
-        solutions = []
+        self._solutions = []
 
         s = socket.socket()
         s.bind((HOST, PORT))
@@ -43,14 +44,17 @@ class Task(object):
                     print("closing connection", str(i))
                     break
                 else:
-                    solutions.append(peon_message)
+                    self._solutions.append(peon_message)
 
             c.close()
 
-        self._completed(solutions)
+        self._completed()
 
-    def _completed(self, solutions):
-        print(solutions)
+    def _completed(self):
+        self.completed_callback(self)
+
+    def get_solutions(self):
+        return self._solutions
 
 
 
