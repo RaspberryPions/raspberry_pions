@@ -1,4 +1,10 @@
 #! /usr/bin/env python2.7
+
+# peon boots and listens for the master (blocks on listen)
+# if master connects, peon interpretes the command and executes it
+# results of execution are sent back to master
+# peon continues listening 
+
 import socket 
 import select 
 import example as example #TO BE CHANGED!!
@@ -8,47 +14,48 @@ from threading import Thread # remove on peon
 
 BLOCK_SIZE = 1024
 HOST = '127.0.0.1'    
-MASTER = '127.0.0.1'    
+MASTER = '127.0.0.1' # TODO: hardcode or get from overlay  
 TASK_PORT = 50009             
-COMM_PORT = 50011
+COMM_PORT = 50011 
 
-def establish_connection():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((HOST, TASK_PORT))
-    return s
+# TODO: support threading on peon for supporting rebooting purposes: use task port for communication back and forth, 
+# create a different server in a thread that listens on COMM_PORT
 
-def execute_task():
-    function_name = 'user_sum'
-    args = eval('[1,2,3,4]')
-    #Assume we're given function_name, and (args)
+def execute_task(processed_data):
+    """ Execute task assigned by master. """
+    function_name, id, args = processed_data
     user_func = getattr(example, function_name)
-    report_to_master(user_func(args))
+    res = user_func(args) # TODO: error handling
+    return res
+
 
 def report_to_master(result):
-    s = establish_connection()
+    """ Send result of task execution to master. """ 
 
-    data = s.recv(BLOCK_SIZE)
-    print 'Received on Peon', data.strip()
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    conn.connect((MASTER, TASK_PORT))
+
     st = str(result)
     st += " " * (BLOCK_SIZE - len(st))
-    print(st)
-    s.send(st)
-    s.send("exit")
-    
-    s.close()
+    conn.send(st)
+    conn.send("exit")
+    conn.close()
 
 
 def process_commands():
-    # proof of concept for select 
-    # TODO: implement previous functionality
+    """ Peon is a server that keeps on waiting for instructions from the master. 
+        Upon receiving the instruction (execute / reboot), it performs it. 
+        If executing instruction resulted in an error, provides a feedback to master.  
+    """
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((HOST, COMM_PORT))
-    server_socket.listen(5)
-    print "Listening on port " + str(COMM_PORT)
+    server_socket.listen(0)
+    print ("Listening on port " + str(COMM_PORT)) 
 
     read_list = [server_socket]
+
     while True:
         readable, writable, errored = select.select(read_list, [], [])
         for s in readable:
@@ -59,22 +66,12 @@ def process_commands():
             else:
                 data = s.recv(1024)
                 if data:
-                    # s.send(data)
-                    print(data)
-                    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    conn.connect((MASTER, TASK_PORT))
-                    conn.send(data)
-                    conn.close()
-
+                    processed_data = eval(data)
+                    result = execute_task(processed_data)
+                    report_to_master(result)
                 else:
                     s.close()
                     read_list.remove(s)
-
-
-    # peon boots and listens for the master (blocks on listen)
-    # if master connects, peon interpretes the command and executes it
-    # results of execution are sent back to master
-    # peon continues listening 
 
 
 if __name__ == "__main__":
