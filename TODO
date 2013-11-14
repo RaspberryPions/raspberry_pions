@@ -1,0 +1,5 @@
+reboot peon
+reboot all
+retry subtask
+non-blocking IO: select 
+upload on PIs

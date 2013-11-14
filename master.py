@@ -109,15 +109,3 @@ if __name__ == "__main__":
 # master listens (non-blocking select) for solutions
 # after all tasks are completed (or some were completed and there were some errors), master invokes completed callback if it exists
 
-
-
-
-
-
-
-# TODO: 
-# reboot peon
-# reboot all
-# retry subtask
-# non-blocking IO: select 
-# upload on PIs
