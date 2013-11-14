@@ -1,0 +1,11 @@
+public key authentication between peons and master, for passwordless ssh rsync.
+
+On master
+generate key with no password in default location with.
+ssh-keygen-t rsa
+
+ssh-copy-id pi@PEON_IP
+
+for each peon
+
+run distribute.sh

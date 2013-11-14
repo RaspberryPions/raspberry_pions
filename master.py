@@ -9,11 +9,8 @@ TASK_PORT = 50009 # port used to assign tasks
 COMM_PORT = 50011 # used for testing on same machine
 HOST = '127.0.0.1'
 
-
 NUM_PEONS = 2
 NUM_TASKS = 4
-
-
 
 class Task(object):
 
@@ -36,9 +33,6 @@ class Task(object):
         conn.send("Hello " + str(id)) # send job to peon
         print("sent\n")
         conn.close() # we don't need this connection anymore
-
-
-
 
     def _listen2(self):
         # proof of concept for select
@@ -97,9 +91,6 @@ class Task(object):
     def get_solutions(self):
         return self._solutions
 
-
-
-
 if __name__ == "__main__":
     t = Task()
 
@@ -108,4 +99,3 @@ if __name__ == "__main__":
 # during creating each connection, master assigns a task to the peon
 # master listens (non-blocking select) for solutions
 # after all tasks are completed (or some were completed and there were some errors), master invokes completed callback if it exists
-
