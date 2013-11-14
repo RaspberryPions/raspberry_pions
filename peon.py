@@ -21,10 +21,9 @@ COMM_PORT = 50011
 # TODO: support threading on peon for supporting rebooting purposes: use task port for communication back and forth, 
 # create a different server in a thread that listens on COMM_PORT
 
-def execute_task():
+def execute_task(processed_data):
     """ Execute task assigned by master. """
-    function_name = 'user_sum' # get this from master
-    args = eval('[1,2,3,4]')
+    function_name, id, args = processed_data
     user_func = getattr(example, function_name)
     res = user_func(args) # TODO: error handling
     return res
@@ -67,12 +66,13 @@ def process_commands():
             else:
                 data = s.recv(1024)
                 if data:
-                    # TODO: add interpret instruction step 
-                    result = execute_task()
+                    processed_data = eval(data)
+                    result = execute_task(processed_data)
                     report_to_master(result)
                 else:
                     s.close()
                     read_list.remove(s)
+
 
 if __name__ == "__main__":
     process_commands()

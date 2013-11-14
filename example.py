@@ -14,4 +14,4 @@ if __name__ == '__main__':
 	task = Task(num_tasks, completed)
 
 	for i in range(num_tasks):
-		task.peon_task("user_sum", i)
+		task.peon_task("user_sum", i, [1, 2, 3, 4])

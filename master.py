@@ -33,17 +33,17 @@ class Task(object):
 
 
     def get_free_peon(self):
-        return self.peon_ip_list[0] # free list representation
-
+        return self.peon_ip_list[0] # free list imitation
 
 
     def peon_task(self, user_function, id, args=[]):
         free_peon = self.get_free_peon() # get free peon from free list
+
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect((HOST, COMM_PORT))
-        conn.send("Hello " + str(id)) # send job to peon
-        # print("sent\n")
-        conn.close() # we don't need this connection anymore
+        data = (user_function, id, args)
+        conn.send(str(data)) # send job to peon
+        conn.close() 
 
 
     def _listen(self):
@@ -70,11 +70,12 @@ class Task(object):
                         peon_message = data.strip()
                         print("Peon sends the solution ", peon_message)
 
-                        if peon_message == "exit":
-                            self.num_tasks -= 1
+                        if peon_message == "exit": # peon has successfully completed the task
+                            self.num_tasks -= 1 
+                            # TODO: once free list is implemented, add peon to the free list
 
-                        # TODO: support returned by peon error handling
-                        # TODO: support timeout error handling
+                        # TODO: support returned by peon error handling: free list required
+                        # TODO: support timeout error handling: free list required
 
                         else: # TODO: modify to support longer chunk of response
                             self._solutions.append(peon_message)
