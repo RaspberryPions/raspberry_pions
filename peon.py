@@ -18,10 +18,11 @@ MASTER = '127.0.0.1' # TODO: hardcode or get from overlay
 TASK_PORT = 50009             
 COMM_PORT = 50011 
 
-# TODO: support threading on peon for supporting rebooting purposes. 
-
+# TODO: support threading on peon for supporting rebooting purposes: use task port for communication back and forth, 
+# create a different server in a thread that listens on COMM_PORT
 
 def execute_task():
+    """ Execute task assigned by master. """
     function_name = 'user_sum' # get this from master
     args = eval('[1,2,3,4]')
     user_func = getattr(example, function_name)
@@ -30,6 +31,8 @@ def execute_task():
 
 
 def report_to_master(result):
+    """ Send result of task execution to master. """ 
+
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     conn.connect((MASTER, TASK_PORT))
 
@@ -55,7 +58,6 @@ def process_commands():
     read_list = [server_socket]
 
     while True:
-    
         readable, writable, errored = select.select(read_list, [], [])
         for s in readable:
             if s is server_socket:
@@ -65,14 +67,12 @@ def process_commands():
             else:
                 data = s.recv(1024)
                 if data:
-                    # TODO: interpret instruction
+                    # TODO: add interpret instruction step 
                     result = execute_task()
                     report_to_master(result)
-
                 else:
                     s.close()
                     read_list.remove(s)
-
 
 if __name__ == "__main__":
     process_commands()

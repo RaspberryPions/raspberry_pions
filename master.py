@@ -17,7 +17,7 @@ COMM_PORT = 50011 # used for testing on same machine, need to keep for reboot si
 HOST = '127.0.0.1'
 
 
-NUM_PEONS = 2
+NUM_PEONS = 2 # get this from overlay 
 
 
 
@@ -47,6 +47,7 @@ class Task(object):
 
 
     def _listen(self):
+        """ Master listens to get back completed work from peons. """
 
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -87,7 +88,8 @@ class Task(object):
 
 
     def _completed(self):
-        self.completed_callback(self)
+        if self.completed_callback is not None: 
+            self.completed_callback(self)
 
 
     def get_solutions(self):
