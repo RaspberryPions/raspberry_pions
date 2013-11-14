@@ -10,7 +10,8 @@ def completed(task):
 	print sum(sol)
 
 if __name__ == '__main__':
-	task = Task(completed)
+	num_tasks = 2
+	task = Task(num_tasks, completed)
 
-	for i in range(2):
+	for i in range(num_tasks):
 		task.peon_task("user_sum", i)
