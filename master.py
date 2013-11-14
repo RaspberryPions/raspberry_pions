@@ -25,7 +25,7 @@ class Task(object):
 
     # added num_tasks since it makes sense for Task to know total number of jobs (to get out of listen loop)
     def __init__(self, num_tasks, completed_callback=None): 
-        self._solutions = [] 
+        self._solutions = [None for i in range(num_tasks)] 
         self.num_tasks = num_tasks
         self.completed_callback = completed_callback
         self.peon_ip_list = ['127.0.0.1'] # get IPs from overlay
@@ -67,18 +67,24 @@ class Task(object):
                 else:
                     data = s.recv(BLOCK_SIZE)
                     if data:
-                        peon_message = data.strip()
-                        print("Peon sends the solution ", peon_message)
+                        received_message = data.strip()
+                        print(received_message)
+                        job_report, id = eval(received_message)
 
-                        if peon_message == "exit": # peon has successfully completed the task
-                            self.num_tasks -= 1 
-                            # TODO: once free list is implemented, add peon to the free list
+                        print("Peon sends the solution ", job_report)
 
-                        # TODO: support returned by peon error handling: free list required
-                        # TODO: support timeout error handling: free list required
+                        try: 
+                            if job_report["status"] == "exit": # peon has successfully completed the task
+                                self.num_tasks -= 1 
+                                # TODO: once free list is implemented, add peon to the free list
 
-                        else: # TODO: modify to support longer chunk of response
-                            self._solutions.append(peon_message)
+                            # TODO: support returned by peon error handling: free list required
+                            # TODO: support timeout error handling: free list required
+
+                            else: # TODO: modify to support longer chunk of response
+                                self._solutions[id] = job_report["answer"]
+                        except Exception as e: # something got broken on peon side, possibly need to reboot peon
+                            pass # TODO: change this 
 
                     else:
                         s.close()
@@ -109,5 +115,4 @@ if __name__ == "__main__":
 # reboot peon
 # reboot all
 # retry subtask
-# non-blocking IO: select 
 # upload on PIs

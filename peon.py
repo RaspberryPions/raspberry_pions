@@ -25,20 +25,30 @@ def execute_task(processed_data):
     """ Execute task assigned by master. """
     function_name, id, args = processed_data
     user_func = getattr(example, function_name)
-    res = user_func(args) # TODO: error handling
-    return res
+
+    job_report = {}
+    try:
+        result = user_func(args) # TODO: error handling
+        job_report["status"] = "success"
+        job_report["answer"] = str(result)
+    except Exception as e:
+        job_report["status"] = "error"
+
+    report_to_master(job_report, id)
 
 
-def report_to_master(result):
+
+def report_to_master(answer, id):
     """ Send result of task execution to master. """ 
 
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     conn.connect((MASTER, TASK_PORT))
 
-    st = str(result)
-    st += " " * (BLOCK_SIZE - len(st))
+    st = str((answer, id))
+    st += " " * (BLOCK_SIZE - len(st))     # TODO: support long answers 
     conn.send(st)
-    conn.send("exit")
+    final_message = {"status" : "exit"}
+    conn.send(str((final_message, id)))
     conn.close()
 
 
@@ -67,8 +77,7 @@ def process_commands():
                 data = s.recv(1024)
                 if data:
                     processed_data = eval(data)
-                    result = execute_task(processed_data)
-                    report_to_master(result)
+                    execute_task(processed_data)
                 else:
                     s.close()
                     read_list.remove(s)
