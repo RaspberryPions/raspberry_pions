@@ -7,9 +7,11 @@
 
 import socket 
 import select 
-import example as example #TO BE CHANGED!!
+# import example as example #TO BE CHANGED!!
+import benchmarks as example 
+import configs
 
-from threading import Thread # remove on peon
+from threading import Thread # currently not used, has to be used for reboot command from master 
 
 
 BLOCK_SIZE = 1024
@@ -23,19 +25,35 @@ COMM_PORT = 50011
 
 def execute_task(processed_data):
     """ Execute task assigned by master. """
+
+    report_pad_length = 38 # space to fit the rest of the message
+    chunk_size = BLOCK_SIZE - report_pad_length
+
     function_name, id, args = processed_data
     user_func = getattr(example, function_name)
-
     job_report = {}
     try:
-        result = user_func(args) # TODO: error handling
+        result = user_func(*args) 
+        print(result)
         job_report["status"] = "success"
-        job_report["answer"] = str(result)
+
+        result_str = str(result)
+
+        # split result in blocks
+        data_blocks = [result_str[i: i + chunk_size] for i in range(0, len(result_str), chunk_size)]
+
+        # send result blocks to master
+        for i in range(len(data_blocks)):
+            job_report["answer"] = data_blocks[i]
+            report_to_master(job_report, id)
+
     except Exception as e:
+        print(e)
         job_report["status"] = "error"
+        report_to_master(job_report, id)
 
-    report_to_master(job_report, id)
-
+    # send end of job marker to master
+    report_to_master({"status" : "exit"}, id)
 
 
 def report_to_master(answer, id):
@@ -45,10 +63,9 @@ def report_to_master(answer, id):
     conn.connect((MASTER, TASK_PORT))
 
     st = str((answer, id))
-    st += " " * (BLOCK_SIZE - len(st))     # TODO: support long answers 
+    st += " " * (BLOCK_SIZE - len(st))    
+
     conn.send(st)
-    final_message = {"status" : "exit"}
-    conn.send(str((final_message, id)))
     conn.close()
 
 
@@ -65,6 +82,7 @@ def process_commands():
     print ("Listening on port " + str(COMM_PORT)) 
 
     read_list = [server_socket]
+    received_data = ""
 
     while True:
         readable, writable, errored = select.select(read_list, [], [])
@@ -76,11 +94,19 @@ def process_commands():
             else:
                 data = s.recv(1024)
                 if data:
-                    processed_data = eval(data)
-                    execute_task(processed_data)
+                    print(data)
+                    if data[0] == "0":  # master continues to send input
+                        received_data += data[1:]  
+                    else:  # end of input has been received, may execute task now
+                        received_data = received_data.strip()
+                        processed_data = eval(received_data)
+                        execute_task(processed_data)
+                        received_data = "" 
                 else:
                     s.close()
                     read_list.remove(s)
+
+
 
 
 if __name__ == "__main__":

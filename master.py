@@ -9,6 +9,7 @@
 
 import socket
 import select
+import configs
 from threading import Thread
 
 BLOCK_SIZE = 1024
@@ -25,25 +26,42 @@ class Task(object):
 
     # added num_tasks since it makes sense for Task to know total number of jobs (to get out of listen loop)
     def __init__(self, num_tasks, completed_callback=None): 
-        self._solutions = [None for i in range(num_tasks)] 
+        self._solutions = ["" for i in range(num_tasks)] 
         self.num_tasks = num_tasks
         self.completed_callback = completed_callback
-        self.peon_ip_list = ['127.0.0.1'] # get IPs from overlay
+        self.free_peons = ['127.0.0.1', '127.0.0.1'] # get IPs from overlay
         Thread(target=self._listen).start() # listen gets thread so Task can issue jobs to peons. 
 
 
-    def get_free_peon(self):
-        return self.peon_ip_list[0] # free list imitation
+    def get_free_peon(self): # free list imitation
+        free_peon = self.free_peons.pop(0)
+        return free_peon
 
 
     def peon_task(self, user_function, id, args=[]):
-        free_peon = self.get_free_peon() # get free peon from free list
+        free_peon = self.get_free_peon() # get available peon from free list
 
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect((HOST, COMM_PORT))
-        data = (user_function, id, args)
-        conn.send(str(data)) # send job to peon
+        data = str((user_function, id, args))
+
+        # split long task into buffer-size parts
+        data_blocks = [data[i: i + BLOCK_SIZE - 1] for i in range(0, len(data), BLOCK_SIZE - 1)]
+
+        for i in range(len(data_blocks)):
+            print("0" + data_blocks[i])
+            st = "0" + data_blocks[i]
+            st += " " * (BLOCK_SIZE - len(st))  
+            conn.send(st)
+        
         conn.close() 
+
+        # mark end of input from master 
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn.connect((HOST, COMM_PORT))
+        conn.send("1")
+        conn.close()
+
 
 
     def _listen(self):
@@ -68,21 +86,22 @@ class Task(object):
                     data = s.recv(BLOCK_SIZE)
                     if data:
                         received_message = data.strip()
-                        print(received_message)
                         job_report, id = eval(received_message)
 
                         print("Peon sends the solution ", job_report)
 
                         try: 
                             if job_report["status"] == "exit": # peon has successfully completed the task
+                                addr = s.getsockname()
                                 self.num_tasks -= 1 
-                                # TODO: once free list is implemented, add peon to the free list
+                                ip = addr[0]
+                                self.free_peons.append(ip) # add peon to the free list
 
                             # TODO: support returned by peon error handling: free list required
                             # TODO: support timeout error handling: free list required
 
-                            else: # TODO: modify to support longer chunk of response
-                                self._solutions[id] = job_report["answer"]
+                            else: 
+                                self._solutions[id] += job_report["answer"]
                         except Exception as e: # something got broken on peon side, possibly need to reboot peon
                             pass # TODO: change this 
 
@@ -116,3 +135,5 @@ if __name__ == "__main__":
 # reboot all
 # retry subtask
 # upload on PIs
+# status
+# multiple tasks (complicated)
